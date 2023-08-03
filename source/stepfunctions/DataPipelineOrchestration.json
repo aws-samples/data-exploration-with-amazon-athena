@@ -1,0 +1,105 @@
+{
+  "Comment": "A Hello World example demonstrating various state types of the Amazon States Language",
+  "StartAt": "Start Raw Crawler",
+  "States": {
+    "Start Raw Crawler": {
+      "Type": "Task",
+      "Parameters": {
+        "Name": "${StackName}-crawler-raw"
+      },
+      "Resource": "arn:aws:states:::aws-sdk:glue:startCrawler",
+      "Next": "Wait for Raw Crawler"
+    },
+    "Wait for Raw Crawler": {
+      "Type": "Wait",
+      "Seconds": 5,
+      "Next": "Get Raw Crawler Status"
+    },
+    "Get Raw Crawler Status": {
+      "Type": "Task",
+      "Next": "Is Raw Crawler Complete?",
+      "Parameters": {
+        "Name": "${StackName}-crawler-raw"
+      },
+      "Resource": "arn:aws:states:::aws-sdk:glue:getCrawler"
+    },
+    "Is Raw Crawler Complete?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.Crawler.State",
+          "StringEquals": "RUNNING",
+          "Next": "Wait for Raw Crawler"
+        }
+      ],
+      "Default": "Parallel"
+    },
+    "Parallel": {
+      "Type": "Parallel",
+      "Branches": [
+        {
+          "StartAt": "Process Customers ETL",
+          "States": {
+            "Process Customers ETL": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Parameters": {
+                "JobName": "${StackName}_process_customer_job"
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Process Sales ETL",
+          "States": {
+            "Process Sales ETL": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Parameters": {
+                "JobName": "${StackName}_process_sales_job"
+              },
+              "End": true
+            }
+          }
+        }
+      ],
+      "Next": "Start Processed Crawler"
+    },
+    "Start Processed Crawler": {
+      "Type": "Task",
+      "Parameters": {
+        "Name": "${StackName}-crawler-processed"
+      },
+      "Resource": "arn:aws:states:::aws-sdk:glue:startCrawler",
+      "Next": "Wait for Processed Crawler"
+    },
+    "Wait for Processed Crawler": {
+      "Type": "Wait",
+      "Seconds": 5,
+      "Next": "Get Processed Crawler"
+    },
+    "Get Processed Crawler": {
+      "Type": "Task",
+      "Parameters": {
+        "Name": "${StackName}-crawler-processed"
+      },
+      "Resource": "arn:aws:states:::aws-sdk:glue:getCrawler",
+      "Next": "Choice"
+    },
+    "Choice": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.Crawler.State",
+          "StringEquals": "RUNNING",
+          "Next": "Wait for Processed Crawler"
+        }
+      ],
+      "Default": "Success"
+    },
+    "Success": {
+      "Type": "Succeed"
+    }
+  }
+}

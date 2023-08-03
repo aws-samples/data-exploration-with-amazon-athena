@@ -1,0 +1,673 @@
+{
+	"AWSTemplateFormatVersion": "2010-09-09",
+	"Description": "Data Exploration with Athena Lab - Foundational Resources",
+	"Parameters": {},
+	"Conditions": {},
+	"Resources": {
+		"DataLakeBucketRaw": {
+			"Type": "AWS::S3::Bucket",
+			"Properties": {
+				"AccessControl": "BucketOwnerFullControl",
+				"PublicAccessBlockConfiguration": {
+					"BlockPublicAcls": true,
+					"BlockPublicPolicy": true,
+					"IgnorePublicAcls": true,
+					"RestrictPublicBuckets": true
+				},
+				"BucketName": {
+					"Fn::Sub": "${AWS::AccountId}-${AWS::StackName}-datalake-raw"
+				}
+			}
+		},
+		"DataLakeBucketProcessed": {
+			"Type": "AWS::S3::Bucket",
+			"Properties": {
+				"AccessControl": "BucketOwnerFullControl",
+				"PublicAccessBlockConfiguration": {
+					"BlockPublicAcls": true,
+					"BlockPublicPolicy": true,
+					"IgnorePublicAcls": true,
+					"RestrictPublicBuckets": true
+				},
+				"BucketName": {
+					"Fn::Sub": "${AWS::AccountId}-${AWS::StackName}-datalake-processed"
+				}
+			}
+		},
+		"DataLakeBucketPresentation": {
+			"Type": "AWS::S3::Bucket",
+			"Properties": {
+				"AccessControl": "BucketOwnerFullControl",
+				"PublicAccessBlockConfiguration": {
+					"BlockPublicAcls": true,
+					"BlockPublicPolicy": true,
+					"IgnorePublicAcls": true,
+					"RestrictPublicBuckets": true
+				},
+				"BucketName": {
+					"Fn::Sub": "${AWS::AccountId}-${AWS::StackName}-datalake-presentation"
+				}
+			}
+		},
+		"AthenaResultsBucket": {
+			"Type": "AWS::S3::Bucket",
+			"Properties": {
+				"AccessControl": "BucketOwnerFullControl",
+				"PublicAccessBlockConfiguration": {
+					"BlockPublicAcls": true,
+					"BlockPublicPolicy": true,
+					"IgnorePublicAcls": true,
+					"RestrictPublicBuckets": true
+				},
+				"BucketName": {
+					"Fn::Sub": "${AWS::AccountId}-${AWS::StackName}-athenaresults"
+				}
+			}
+		},
+		"AmazonAthenaLakeFormationWorkgroup": {
+			"DependsOn": "AthenaResultsBucket",
+			"Type": "AWS::Athena::WorkGroup",
+			"Properties": {
+				"Description": "A workgroup for Lake Formation",
+				"Name": "AmazonAthenaLakeFormation",
+				"RecursiveDeleteOption": true,
+				"State": "ENABLED",
+				"WorkGroupConfiguration": {
+					"EnforceWorkGroupConfiguration": true,
+					"PublishCloudWatchMetricsEnabled": true,
+					"RequesterPaysEnabled": false,
+					"ResultConfiguration": {
+						"OutputLocation": {
+							"Fn::Sub": "s3://${AWS::AccountId}-${AWS::StackName}-athenaresults"
+						}
+					}
+				}
+			}
+		},
+		"GlueDatabaseRaw": {
+			"Type": "AWS::Glue::Database",
+			"Properties": {
+				"CatalogId": {
+					"Ref": "AWS::AccountId"
+				},
+				"DatabaseInput": {
+					"Description": "Tier1/Raw Database",
+					"Name": "raw",
+					"LocationUri": {
+						"Fn::Sub": "s3://${AWS::AccountId}-${AWS::StackName}-datalake-raw"
+					}
+				}
+			},
+			"DependsOn": "DataLakeBucketRaw"
+		},
+		"GlueDatabaseProcessed": {
+			"Type": "AWS::Glue::Database",
+			"Properties": {
+				"CatalogId": {
+					"Ref": "AWS::AccountId"
+				},
+				"DatabaseInput": {
+					"Description": "Tier 2 / Processed Database",
+					"Name": "processed",
+					"LocationUri": {
+						"Fn::Sub": "s3://${AWS::AccountId}-${AWS::StackName}-datalake-processed"
+					}
+				}
+			},
+			"DependsOn": "DataLakeBucketProcessed"
+		},
+		"GlueDatabasePresentation": {
+			"Type": "AWS::Glue::Database",
+			"Properties": {
+				"CatalogId": {
+					"Ref": "AWS::AccountId"
+				},
+				"DatabaseInput": {
+					"Description": "Tier 3/Presentation Database",
+					"Name": "presentation",
+					"LocationUri": {
+						"Fn::Sub": "s3://${AWS::AccountId}-${AWS::StackName}-datalake-presentation"
+					}
+				}
+			},
+			"DependsOn": "DataLakeBucketPresentation"
+		},
+		"GlueCrawlerRaw": {
+			"Type": "AWS::Glue::Crawler",
+			"Properties": {
+				"DatabaseName": {
+					"Ref": "GlueDatabaseRaw"
+				},
+				"Description": "Crawler for raw data",
+				"Name": {
+					"Fn::Sub": "${AWS::StackName}-crawler-raw"
+				},
+				"Role": {
+					"Ref": "GlueExecutionRole"
+				},
+				"TablePrefix": "raw_",
+				"Targets": {
+					"S3Targets": [
+						{
+							"Path": {
+								"Fn::Sub": "s3://${AWS::AccountId}-${AWS::StackName}-datalake-raw"
+							}
+						}
+					]
+				}
+			}
+		},
+		"GlueCrawlerProcessed": {
+			"Type": "AWS::Glue::Crawler",
+			"Properties": {
+				"DatabaseName": {
+					"Ref": "GlueDatabaseProcessed"
+				},
+				"Description": "Crawler for processed data",
+				"Name": {
+					"Fn::Sub": "${AWS::StackName}-crawler-processed"
+				},
+				"Role": {
+					"Ref": "GlueExecutionRole"
+				},
+				"TablePrefix": "processed_",
+				"Targets": {
+					"S3Targets": [
+						{
+							"Path": {
+								"Fn::Sub": "s3://${AWS::AccountId}-${AWS::StackName}-datalake-processed"
+							}
+						}
+					]
+				}
+			}
+		},
+		"GlueCrawlerPresentation": {
+			"Type": "AWS::Glue::Crawler",
+			"Properties": {
+				"DatabaseName": {
+					"Ref": "GlueDatabasePresentation"
+				},
+				"Description": "Crawler for processed data",
+				"Name": {
+					"Fn::Sub": "${AWS::StackName}-crawler-presentation"
+				},
+				"Role": {
+					"Ref": "GlueExecutionRole"
+				},
+				"TablePrefix": "processed_",
+				"Targets": {
+					"S3Targets": [
+						{
+							"Path": {
+								"Fn::Sub": "s3://${AWS::AccountId}-${AWS::StackName}-datalake-presentation"
+							}
+						}
+					]
+				}
+			}
+		},
+		"StepFunctionsExecutionRole": {
+			"Type": "AWS::IAM::Role",
+			"Properties": {
+				"RoleName": {
+					"Fn::Sub": "${AWS::StackName}-StepFunctionsExecutionRole"
+				},
+				"AssumeRolePolicyDocument": {
+					"Version": "2012-10-17",
+					"Statement": [
+						{
+							"Effect": "Allow",
+							"Principal": {
+								"Service": [
+									"states.amazonaws.com"
+								]
+							},
+							"Action": [
+								"sts:AssumeRole"
+							]
+						}
+					]
+				},
+				"Policies": [
+					{
+						"PolicyName": "CloudWatchPermissios",
+						"PolicyDocument": {
+							"Version": "2012-10-17",
+							"Statement": [
+								{
+									"Effect": "Allow",
+									"Action": [
+										"logs:CreateLogDelivery",
+										"logs:GetLogDelivery",
+										"logs:UpdateLogDelivery",
+										"logs:DeleteLogDelivery",
+										"logs:ListLogDeliveries",
+										"logs:PutResourcePolicy",
+										"logs:DescribeResourcePolicies",
+										"logs:DescribeLogGroups"
+									],
+									"Resource": "*"
+								}
+							]
+						}
+					},
+					{
+						"PolicyName": "GluePermissions",
+						"PolicyDocument": {
+							"Version": "2012-10-17",
+							"Statement": [
+								{
+									"Sid": "VisualEditor0",
+									"Effect": "Allow",
+									"Action": [
+										"glue:StartCrawler",
+										"glue:GetCrawler"
+									],
+									"Resource": [
+										{
+											"Fn::Sub": "arn:aws:glue:*:${AWS::AccountId}:crawler/${AWS::StackName}-crawler-raw"
+										},
+										{
+											"Fn::Sub": "arn:aws:glue:*:${AWS::AccountId}:crawler/${AWS::StackName}-crawler-processed"
+										},
+										{
+											"Fn::Sub": "arn:aws:glue:*:${AWS::AccountId}:crawler/${AWS::StackName}-crawler-presentation"
+										}
+									]
+								},
+								{
+									"Sid": "VisualEditor1",
+									"Effect": "Allow",
+									"Action": [
+										"glue:StartJobRun",
+										"glue:GetJobRun",
+										"glue:GetJobRuns"
+									],
+									"Resource": [
+										{
+											"Fn::Sub": "arn:aws:glue:*:${AWS::AccountId}:job/${AWS::StackName}_process_customer_job"
+										},
+										{
+											"Fn::Sub": "arn:aws:glue:*:${AWS::AccountId}:job/${AWS::StackName}_process_sales_job"
+										}
+									]
+								}
+							]
+						}
+					}
+				]
+			}
+		},
+		"ProcessCustomerJob": {
+			"Type": "AWS::Glue::Job",
+			"Properties": {
+				"Command": {
+					"Name": "glueetl",
+					"ScriptLocation": {
+						"Fn::Sub": "s3://moderndataarchitecture-immersionday-assets-${AWS::Region}/v4_2/source/stage_customer_data.py"
+					}
+				},
+				"DefaultArguments": {
+					"--output_s3_bucket_name": {
+						"Fn::Sub": "${AWS::AccountId}-${AWS::StackName}-datalake-processed"
+					},
+					"--enable-continuous-cloudwatch-log": "true"
+				},
+				"ExecutionProperty": {
+					"MaxConcurrentRuns": 1
+				},
+				"MaxRetries": 0,
+				"Timeout": 5,
+				"GlueVersion": "4.0",
+				"Name": {
+					"Fn::Sub": "${AWS::StackName}_process_customer_job"
+				},
+				"Role": {
+					"Fn::Sub": "arn:aws:iam::${AWS::AccountId}:role/${AWS::StackName}-GlueExecutionRole"
+				}
+			}
+		},
+		"ProcessSalesJob": {
+			"Type": "AWS::Glue::Job",
+			"Properties": {
+				"Command": {
+					"Name": "glueetl",
+					"ScriptLocation": {
+						"Fn::Sub": "s3://moderndataarchitecture-immersionday-assets-${AWS::Region}/v4_2/source/stage_sales_data.py"
+					}
+				},
+				"DefaultArguments": {
+					"--output_s3_bucket_name": {
+						"Fn::Sub": "${AWS::AccountId}-${AWS::StackName}-datalake-processed"
+					},
+					"--enable-continuous-cloudwatch-log": "true"
+				},
+				"ExecutionProperty": {
+					"MaxConcurrentRuns": 1
+				},
+				"MaxRetries": 0,
+				"Timeout": 5,
+				"GlueVersion": "4.0",
+				"Name": {
+					"Fn::Sub": "${AWS::StackName}_process_sales_job"
+				},
+				"Role": {
+					"Fn::Sub": "arn:aws:iam::${AWS::AccountId}:role/${AWS::StackName}-GlueExecutionRole"
+				}
+			}
+		},
+		"GlueExecutionRole": {
+			"Type": "AWS::IAM::Role",
+			"Properties": {
+				"RoleName": {
+					"Fn::Sub": "${AWS::StackName}-GlueExecutionRole"
+				},
+				"AssumeRolePolicyDocument": {
+					"Version": "2012-10-17",
+					"Statement": [
+						{
+							"Effect": "Allow",
+							"Principal": {
+								"Service": "glue.amazonaws.com"
+							},
+							"Action": [
+								"sts:AssumeRole"
+							]
+						}
+					]
+				},
+				"ManagedPolicyArns": [
+					"arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole"
+				],
+				"Policies": [
+					{
+						"PolicyName": "CloudWatchPermissions",
+						"PolicyDocument": {
+							"Version": "2012-10-17",
+							"Statement": [
+								{
+									"Sid": "VisualEditor0",
+									"Effect": "Allow",
+									"Action": "cloudwatch:PutMetricData",
+									"Resource": "*"
+								},
+								{
+									"Sid": "VisualEditor1",
+									"Effect": "Allow",
+									"Action": "logs:PutLogEvents",
+									"Resource": {
+										"Fn::Sub": "arn:aws:logs:*:${AWS::AccountId}:log-group:*:log-stream:*"
+									}
+								},
+								{
+									"Sid": "VisualEditor2",
+									"Effect": "Allow",
+									"Action": [
+										"logs:CreateLogStream",
+										"logs:CreateLogGroup"
+									],
+									"Resource": {
+										"Fn::Sub": "arn:aws:logs:*:${AWS::AccountId}:log-group:*"
+									}
+								},
+								{
+									"Sid": "VisualEditor3",
+									"Effect": "Allow",
+									"Action": "logs:AssociateKmsKey",
+									"Resource": {
+										"Fn::Sub": "arn:aws:logs:*:${AWS::AccountId}:log-group:*"
+									}
+								}
+							]
+						}
+					},
+					{
+						"PolicyName": "S3Permissions",
+						"PolicyDocument": {
+							"Version": "2012-10-17",
+							"Statement": [
+								{
+									"Sid": "1",
+									"Effect": "Allow",
+									"Action": [
+										"s3:GetObject"
+									],
+									"Resource": [
+										{
+											"Fn::Sub": "arn:aws:s3:::moderndataarchitecture-immersionday-assets-${AWS::Region}/v4_2/source/stage_customer_data.py"
+										},
+										{
+											"Fn::Sub": "arn:aws:s3:::moderndataarchitecture-immersionday-assets-${AWS::Region}/v4_2/source/stage_sales_data.py"
+										}
+									]
+								},
+								{
+									"Sid": "2",
+									"Effect": "Allow",
+									"Action": [
+										"s3:PutObject",
+										"s3:GetObject"
+									],
+									"Resource": [
+										{
+											"Fn::Sub": "arn:aws:s3:::${AWS::AccountId}-${AWS::StackName}-datalake-raw"
+										},
+										{
+											"Fn::Sub": "arn:aws:s3:::${AWS::AccountId}-${AWS::StackName}-datalake-processed"
+										},
+										{
+											"Fn::Sub": "arn:aws:s3:::${AWS::AccountId}-${AWS::StackName}-datalake-presentation"
+										},
+										{
+											"Fn::Sub": "arn:aws:s3:::${AWS::AccountId}-${AWS::StackName}-datalake-raw/*"
+										},
+										{
+											"Fn::Sub": "arn:aws:s3:::${AWS::AccountId}-${AWS::StackName}-datalake-processed/*"
+										},
+										{
+											"Fn::Sub": "arn:aws:s3:::${AWS::AccountId}-${AWS::StackName}-datalake-presentation/*"
+										}
+									]
+								}
+							]
+						}
+					},
+					{
+						"PolicyName": "LakeFormationPermissions",
+						"PolicyDocument": {
+							"Version": "2012-10-17",
+							"Statement": [
+								{
+									"Sid": "VisualEditor0",
+									"Effect": "Allow",
+									"Action": [
+										"lakeformation:GetDataAccess"
+									],
+									"Resource": "*"
+								}
+							]
+						}
+					}
+				]
+			}
+		},
+		"DataPipelineOrchestration": {
+			"Type": "AWS::StepFunctions::StateMachine",
+			"Properties": {
+				"StateMachineName": {
+					"Fn::Sub": "${AWS::StackName}-DataPipelineOrchestration"
+				},
+				"StateMachineType": "STANDARD",
+				"DefinitionS3Location": {
+					"Bucket": {
+						"Fn::Sub": "moderndataarchitecture-immersionday-assets-${AWS::Region}"
+					},
+					"Key": "v4_2/source/DataPipelineOrchestration.json"
+				},
+				"DefinitionSubstitutions": {
+					"StackName": {
+						"Fn::Sub": "${AWS::StackName}"
+					}
+				},
+				"RoleArn": {
+					"Fn::GetAtt": [
+						"StepFunctionsExecutionRole",
+						"Arn"
+					]
+				}
+			}
+		},
+		"AthenaWorkgroupRole": {
+			"Type": "AWS::IAM::Role",
+			"Properties": {
+				"RoleName": {
+					"Fn::Sub": "${AWS::StackName}-AthenaWorkgroupRole"
+				},
+				"AssumeRolePolicyDocument": {
+					"Version": "2012-10-17",
+					"Statement": [
+						{
+							"Effect": "Allow",
+							"Principal": {
+								"Service": "athena.amazonaws.com"
+							},
+							"Action": [
+								"sts:AssumeRole"
+							]
+						}
+					]
+				},
+				"Policies": [
+					{
+						"PolicyName": "AthenaWorkgroupPermissions",
+						"PolicyDocument": {
+							"Version": "2012-10-17",
+							"Statement": [
+								{
+									"Sid": "VisualEditor9",
+									"Effect": "Allow",
+									"Action": [
+										"glue:GetDatabase",
+										"glue:GetTables",
+										"glue:GetPartitions",
+										"glue:CreateDatabase",
+										"glue:GetDatabases",
+										"glue:GetTable"
+									],
+									"Resource": [
+										{
+											"Fn::Sub": "arn:aws:glue:*:${AWS::AccountId}:catalog"
+										},
+										{
+											"Fn::Sub": "arn:aws:glue:*:${AWS::AccountId}:table/*/*"
+										},
+										{
+											"Fn::Sub": "arn:aws:glue:*:${AWS::AccountId}:database/*"
+										}
+									]
+								},
+								{
+									"Sid": "1",
+									"Effect": "Allow",
+									"Action": [
+										"s3:PutObject",
+										"s3:ListBucket",
+										"s3:DeleteObject",
+										"s3:GetObject"
+									],
+									"Resource": [
+										{
+											"Fn::Sub": "arn:aws:s3:::${AWS::AccountId}-${AWS::StackName}-datalake-raw"
+										},
+										{
+											"Fn::Sub": "arn:aws:s3:::${AWS::AccountId}-${AWS::StackName}-datalake-processed"
+										},
+										{
+											"Fn::Sub": "arn:aws:s3:::${AWS::AccountId}-${AWS::StackName}-datalake-presentation"
+										},
+										{
+											"Fn::Sub": "arn:aws:s3:::${AWS::AccountId}-${AWS::StackName}-datalake-raw/*"
+										},
+										{
+											"Fn::Sub": "arn:aws:s3:::${AWS::AccountId}-${AWS::StackName}-datalake-processed/*"
+										},
+										{
+											"Fn::Sub": "arn:aws:s3:::${AWS::AccountId}-${AWS::StackName}-datalake-presentation/*"
+										}
+									]
+								},
+								{
+									"Effect": "Allow",
+									"Action": [
+										"s3:PutObject",
+										"s3:ListBucket",
+										"s3:DeleteObject",
+										"s3:GetObject"
+									],
+									"Resource": [
+									{"Fn::Sub": "arn:aws:s3:::${AWS::AccountId}-athenalab-athenaresults/*"},
+										{"Fn::Sub": "arn:aws:s3:::${AWS::AccountId}-athenalab-athenaresults"}
+									]
+								},
+								{
+									"Effect": "Allow",
+									"Action": [
+										"athena:GetWorkGroup",
+										"athena:TerminateSession",
+										"athena:GetSession",
+										"athena:GetSessionStatus",
+										"athena:ListSessions",
+										"athena:StartCalculationExecution",
+										"athena:GetCalculationExecutionCode",
+										"athena:StopCalculationExecution",
+										"athena:ListCalculationExecutions",
+										"athena:GetCalculationExecution",
+										"athena:GetCalculationExecutionStatus",
+										"athena:ListExecutors",
+										"athena:ExportNotebook",
+										"athena:UpdateNotebook"
+									],
+									"Resource": {"Fn::Sub": "arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/AthenaLabExploration"}
+								},
+								{
+									"Sid": "VisualEditor0",
+									"Effect": "Allow",
+									"Action": [
+										"logs:CreateLogStream",
+										"logs:DescribeLogStreams",
+										"logs:CreateLogGroup",
+										"logs:PutLogEvents"
+									],
+									"Resource": [
+										{"Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws-athena:*"},
+										{"Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws-athena*:log-stream:*"}
+									]
+								},
+								{
+									"Sid": "VisualEditor1",
+									"Effect": "Allow",
+									"Action": "logs:DescribeLogGroups",
+									"Resource": {"Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*"}
+								},
+								{
+									"Sid": "VisualEditor2",
+									"Effect": "Allow",
+									"Action": [
+										"cloudwatch:PutMetricData"
+									],
+									"Resource": "*",
+									"Condition": {
+										"StringEquals": {
+											"cloudwatch:namespace": "AmazonAthenaForApacheSpark"
+										}
+									}
+								}
+							]
+						}
+					}
+				]
+			}
+		}
+	}
+}
