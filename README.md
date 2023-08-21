@@ -201,10 +201,6 @@ df_group.write.mode("overwrite").format("parquet").save("s3://<account_id>-athen
 
 In this lab, we've created a simple data lake with Amazon Glue and Amazon Simple Storage Service (S3), and used Amazon Athena to run some simple queries on the data.  We've then use Apache Spark in a notebook in Amazon Athena to further explore the data, join data sets, create an aggregation and a visualization, and optionally saved the results back to the data lake.
 
-## Survey
-
-Please complete the following survey to let us know how you found this lab and how we can improve.
-
 ## Clean Up
 
 To clean up the resources created here, complete the following.
