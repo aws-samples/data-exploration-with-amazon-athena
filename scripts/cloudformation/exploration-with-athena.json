@@ -602,12 +602,20 @@
 									"Action": [
 										"s3:PutObject",
 										"s3:ListBucket",
+										"athena:*",
 										"s3:DeleteObject",
 										"s3:GetObject"
 									],
 									"Resource": [
-									{"Fn::Sub": "arn:aws:s3:::${AWS::AccountId}-athenalab-athenaresults/*"},
-										{"Fn::Sub": "arn:aws:s3:::${AWS::AccountId}-athenalab-athenaresults"}
+										{
+											"Fn::Sub": "arn:aws:s3:::${AWS::AccountId}-athenalab-athenaresults/*"
+										},
+										{
+											"Fn::Sub": "arn:aws:athena:*:${AWS::AccountId}:workgroup/*"
+										},
+										{
+											"Fn::Sub": "arn:aws:s3:::${AWS::AccountId}-athenalab-athenaresults"
+										}
 									]
 								},
 								{
@@ -628,7 +636,9 @@
 										"athena:ExportNotebook",
 										"athena:UpdateNotebook"
 									],
-									"Resource": {"Fn::Sub": "arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/AthenaLabExploration"}
+									"Resource": {
+										"Fn::Sub": "arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/AthenaLabExploration"
+									}
 								},
 								{
 									"Sid": "VisualEditor0",
@@ -640,15 +650,21 @@
 										"logs:PutLogEvents"
 									],
 									"Resource": [
-										{"Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws-athena:*"},
-										{"Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws-athena*:log-stream:*"}
+										{
+											"Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws-athena:*"
+										},
+										{
+											"Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws-athena*:log-stream:*"
+										}
 									]
 								},
 								{
 									"Sid": "VisualEditor1",
 									"Effect": "Allow",
 									"Action": "logs:DescribeLogGroups",
-									"Resource": {"Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*"}
+									"Resource": {
+										"Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*"
+									}
 								},
 								{
 									"Sid": "VisualEditor2",
