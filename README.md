@@ -10,12 +10,6 @@ Amazon Athena is a serverless, interactive analytics service built on open-sourc
 
 In this lab, we'll explore how to combine the Amazon Athena with the power of Apache Spark to quickly and easily explore and transform data.
 
-## Architecture
-
-In order to explore the data with Amazon Athena and Apache Spark, we'll create the following architecture.
-
-![Architecture diagram](./images/architecture.png)
-
 ## Before You Begin
 Before you start, there are a few things you should know:
 
