@@ -26,7 +26,7 @@ Before you start, there are a few things you should know:
 ## Step 1 - Setup 
 First, we need to set up a data lake in the account that we'll use with Athena.
 
-1.1. Download the CloudFormation template file here. This template will create the following in your account:
+1.1. Download the CloudFormation template file [here](https://github.com/aws-samples/data-exploration-with-amazon-athena/blob/3520655546441c40e787e2b91aec756b3d008735/scripts/cloudformation/exploration-with-athena.json). This template will create the following in your account:
 - S3Bucket - <accountid>-<stackname>-athenaresults - this bucket will be used to store the results of Athena queries.
 - S3Bucket - <accountid>-<stackname>-datalake-raw - this bucket will store our raw customer and sales data as CSV.
 - S3Bucket - <accountid>-<stackname>-datalake-processed - this bucket will store our processed customer and sales data as Parquet.
