@@ -1,7 +1,5 @@
 # Data Exploration with Apache Spark in Amazon Athena
 
-This lab is provided as part of [AWS Innovate Data Edition](https://aws.amazon.com/events/aws-innovate/data/). Click [here](https://github.com/phonghuule/aws-innovate-data-edition-2023) to explore the full list of hands-on labs.
-
 :information_source: You will run this lab in your own AWS account and running this lab will incur some costs. Please follow directions at the end of the lab to remove resources to avoid future costs.
 
 ## Overview
@@ -206,15 +204,6 @@ To clean up the resources created here, complete the following.
 - <accountid>-athenalab-datalake-processed
 - <accountid>-athenalab-datalake-presentation
 3. Navigate to CloudFormation, and delete the **athenalab** stack. 
-
-## Survey
-
-Let us know what you thought of this session and how we can improve the presentation experience for you in the future by completing [here](https://amazonmr.au1.qualtrics.com/jfe/form/SV_1U4cxprfqLngWGy?Session=HOL06) event session poll. Participants who complete the surveys from AWS Innovate Online Conference will receive a gift code for USD25 in AWS credits (1, 2 & 3). AWS credits will be sent via email by September 29, 2023.
-Note: Only registrants of AWS Innovate Online Conference who complete the surveys will receive a gift code for USD25 in AWS credits via email.
-1. AWS Promotional Credits Terms and conditions apply: https://aws.amazon.com/awscredits/
-2. Limited to 1 x USD25 AWS credits per participant.
-3. Participants will be required to provide their business email addresses to receive the gift code for AWS credits.
-
 
 ## Security
 
